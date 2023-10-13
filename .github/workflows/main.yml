@@ -49,10 +49,26 @@ jobs:
         uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
         with:
           bundler-cache: true
-      # Add or replace any other lints here
       - name: Security audit dependencies
         run: bundle exec bundle audit --update
       - name: Security audit application code
         run: bundle exec brakeman -q -w2
-      - name: Lint Ruby files
-        run: bundle exec rubocop --parallel
+      - name: Run linter
+        id: rubocop
+        run: |
+          git fetch origin $GITHUB_BASE_REF:$GITHUB_BASE_REF
+          git checkout $GITHUB_HEAD_REF
+          bundle check || bundle install
+          git --no-pager diff --name-only "$GITHUB_BASE_REF...$GITHUB_HEAD_REF" \
+              --diff-filter=ACMR \
+            | xargs ls -1 2>/dev/null \
+            | xargs bundle exec rubocop \
+              --force-exclusion \
+              --config .rubocop.yml \
+              --fail-level F \
+              --format progress \
+              --auto-correct
+      - uses: reviewdog/action-suggester@v1
+        with:
+          tool_name: rubocop
+        if: ${{ !github.event.pull_request.draft }}
