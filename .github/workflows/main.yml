@@ -65,7 +65,3 @@ jobs:
               --fail-level F \
               --format progress \
               --auto-correct
-      - uses: reviewdog/action-suggester@v1
-        with:
-          tool_name: rubocop
-        if: ${{ !github.event.pull_request.draft }}
